@@ -15,8 +15,17 @@ from langchain.agents import create_tool_calling_agent, AgentExecutor, Tool
 # ---------------------------
 # Load OpenAI API key
 # ---------------------------
+import streamlit as st
+
+# Get the key from Streamlit Secrets
+api_key = st.secrets["openai"]["api_key"]
+
+# Initialize the OpenAI LLM with the key
+from langchain_openai import ChatOpenAI
+llm = ChatOpenAI(model='gpt-3.5-turbo', openai_api_key=api_key)
+
 load_dotenv()
-api_key = os.environ.get("OPENAI_API_KEY")
+#api_key = os.environ.get("OPENAI_API_KEY")
 
 # ---------------------------
 # Load Walmart dataset
@@ -28,7 +37,7 @@ df['Sales'] = df['unit_price'] * df['quantity']
 # ---------------------------
 # LLM setup
 # ---------------------------
-llm = ChatOpenAI(model='gpt-3.5-turbo', openai_api_key=api_key)
+#llm = ChatOpenAI(model='gpt-3.5-turbo', openai_api_key=api_key)
 
 # ---------------------------
 # Tools for AI Agent
@@ -158,3 +167,4 @@ def answer_query(choice, user_input=None):
         func_name = tool_map[choice]
         func = next(t.func for t in tools if t.name==func_name)
         return {"output": func("")}
+
