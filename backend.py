@@ -87,33 +87,54 @@ def query_tool(user_input: str) -> str:
     """)
     return llm_response.content
 
+import traceback
+
 def general_question_tool(user_input: str) -> str:
     columns = list(df.columns)
+
+    # Step 1: Ask LLM only for Python + SQL + explanation (no fabricated output!)
     llm_response = llm.invoke(f"""
     You are a data analyst for the Walmart dataset with columns: {columns}
 
     User Question: "{user_input}"
 
     Provide:
-    1. Python (pandas) code to answer the question for df where df is Walmart.csv
-    2. SQL query (assume table name = walmart)
-    3. Brief explanation in human language
-    4. Provide output using the actual Walmart.csv dataset 
+    1. Python (pandas) code to answer the question for df (where df = Walmart.csv).
+       IMPORTANT: Assign the final result to a variable called result.
+    2. SQL query (assume table name = walmart).
+    3. Brief explanation in human language.
 
-    Return in clear sections:
-    Python:
-    <code>
-
-    SQL:
-    <code>
-
-    Explanation:
-    <text>
-
-    Answer:
-    <text>
+    Do NOT provide the output. Only code + SQL + explanation.
     """)
-    return llm_response.content
+
+    response_text = llm_response.content
+
+    # Step 2: Extract Python code
+    python_code = ""
+    if "Python:" in response_text:
+        try:
+            python_code = response_text.split("Python:")[1].split("SQL:")[0].strip("``` \n")
+        except Exception:
+            python_code = ""
+
+    # Step 3: Run Python code on actual df
+    result = None
+    if python_code:
+        try:
+            local_env = {"df": df}
+            exec(python_code, {}, local_env)
+            result = local_env.get("result")
+        except Exception as e:
+            result = f"Error executing code: {e}\n{traceback.format_exc()}"
+
+    # Step 4: Return combined response
+    return f"""
+{response_text}
+
+Answer (from Walmart.csv):
+{result}
+"""
+
 
 # ---------------------------
 # Convert to LangChain Tool objects
@@ -167,6 +188,7 @@ def answer_query(choice, user_input=None):
         func_name = tool_map[choice]
         func = next(t.func for t in tools if t.name==func_name)
         return {"output": func("")}
+
 
 
 
