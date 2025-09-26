@@ -30,7 +30,7 @@ choice = st.sidebar.selectbox(
 # ---------------------------
 # Custom/general questions (7 & 8)
 # ---------------------------
-if choice in ["7", "8"]:
+if choice in ["7"]:
     user_q = st.text_area("✍️ Enter your question:", "")
     if st.button("Run Analysis"):
         response = answer_query(choice, user_input=user_q)
@@ -137,3 +137,4 @@ else:
         response = answer_query(choice)
         st.subheader("📌 Walmart EDA Report")
         st.text(response["output"])
+
