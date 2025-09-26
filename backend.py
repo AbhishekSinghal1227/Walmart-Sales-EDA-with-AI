@@ -97,8 +97,8 @@ def general_question_tool(user_input: str) -> str:
     Provide:
     1. Python (pandas) code to answer the question (assume df as dataframe)
     2. SQL query (assume table name = walmart)
-    3. Brief explanation in plain English
-    4. Answer using the dataset (if possible)
+    3. Brief explanation in human language
+    4. Provide output using the dataset 
 
     Return in clear sections:
     Python:
@@ -138,8 +138,8 @@ fixed_questions = {
     "4": "Show invoice with highest sales",
     "5": "Generate all plots",
     "6": "Full analysis (all tools)",
-    "7": "Ask a custom query (Python + SQL)",
-    "8": "Ask a general question (Python + SQL + Explanation + Answer)"
+    "7": "Query Generator in Python & SQL",
+    "8": "General Questions with explanation and code"
 }
 
 # ---------------------------
@@ -167,4 +167,5 @@ def answer_query(choice, user_input=None):
         func_name = tool_map[choice]
         func = next(t.func for t in tools if t.name==func_name)
         return {"output": func("")}
+
 
