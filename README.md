@@ -31,13 +31,6 @@ Seaborn & Matplotlib – Data visualization
 LangChain + OpenAI API – AI-powered insights and automated analysis
 
 
-## Installation
-
-
-## Navigate into the project directory:
-
-cd Walmart-Sales-EDA-with-AI
-
 
 ## Install dependencies:
 
@@ -67,9 +60,9 @@ This project demonstrates how AI can assist analysts while allowing interactive 
 
 
 
-Author
+## Author
 
-Abhishek Singhal – Recent Master’s Graduate in Data Analytics
+Abhishek Singhal –  Master’s in Data Analytics from Boston University
 
 GitHub: https://github.com/AbhishekSinghal1227
 
