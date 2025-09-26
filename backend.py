@@ -136,10 +136,10 @@ fixed_questions = {
     "2": "Show missing values",
     "3": "Show correlation matrix",
     "4": "Show invoice with highest sales",
-    "5": "Generate all plots",
-    "6": "Full analysis (all tools)",
+    "5": "Generate plots",
+    "6": "Full analysis",
     "7": "Query Generator in Python & SQL",
-    "8": "General Questions with explanation and code"
+    "8": "General Questions with code, explanation and answer"
 }
 
 # ---------------------------
@@ -167,6 +167,7 @@ def answer_query(choice, user_input=None):
         func_name = tool_map[choice]
         func = next(t.func for t in tools if t.name==func_name)
         return {"output": func("")}
+
 
 
 
