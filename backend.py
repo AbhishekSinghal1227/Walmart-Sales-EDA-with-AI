@@ -91,49 +91,15 @@ import traceback
 
 def general_question_tool(user_input: str) -> str:
     columns = list(df.columns)
-
-    # Step 1: Ask LLM only for Python + SQL + explanation (no fabricated output!)
     llm_response = llm.invoke(f"""
-    You are a data analyst for the Walmart dataset with columns: {columns}
-
-    User Question: "{user_input}"
-
+    ...
     Provide:
-    1. Python (pandas) code to answer the question for df (where df = Walmart.csv).
-       IMPORTANT: Assign the final result to a variable called result.
-    2. SQL query (assume table name = walmart).
-    3. Brief explanation in human language.
-
-    Do NOT provide the output. Only code + SQL + explanation.
+    1. Python (pandas) code
+    2. SQL query
+    3. Explanation
+    4. Provide output using the actual Walmart.csv dataset
     """)
-
-    response_text = llm_response.content
-
-    # Step 2: Extract Python code
-    python_code = ""
-    if "Python:" in response_text:
-        try:
-            python_code = response_text.split("Python:")[1].split("SQL:")[0].strip("``` \n")
-        except Exception:
-            python_code = ""
-
-    # Step 3: Run Python code on actual df
-    result = None
-    if python_code:
-        try:
-            local_env = {"df": df}
-            exec(python_code, {}, local_env)
-            result = local_env.get("result")
-        except Exception as e:
-            result = f"Error executing code: {e}\n{traceback.format_exc()}"
-
-    # Step 4: Return combined response
-    return f"""
-{response_text}
-
-Answer (from Walmart.csv):
-{result}
-"""
+    return llm_response.content
 
 
 # ---------------------------
