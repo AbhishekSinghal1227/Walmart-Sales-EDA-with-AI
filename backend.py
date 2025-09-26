@@ -98,7 +98,7 @@ def general_question_tool(user_input: str) -> str:
     1. Python (pandas) code to answer the question for df where df is Walmart.csv
     2. SQL query (assume table name = walmart)
     3. Brief explanation in human language
-    4. Provide output using the actual Walmart.csv dataset using your python code
+    
 
     Return in clear sections:
     Python:
@@ -110,8 +110,6 @@ def general_question_tool(user_input: str) -> str:
     Explanation:
     <text>
 
-    Answer:
-    <text>
     """)
     return llm_response.content
 
@@ -167,6 +165,7 @@ def answer_query(choice, user_input=None):
         func_name = tool_map[choice]
         func = next(t.func for t in tools if t.name==func_name)
         return {"output": func("")}
+
 
 
 
