@@ -3,6 +3,7 @@
 An interactive AI-powered dashboard for exploring Walmart sales data, built using Python, Streamlit, and AI. This project allows users to perform exploratory data analysis (EDA) easily, with AI-assisted insights and dynamic visualizations.
 
 🔗 Live Demo: https://walmart-sales-eda-with-ai.streamlit.app/
+<img width="1595" height="810" alt="image" src="https://github.com/user-attachments/assets/e1767dc1-e409-46be-a979-a951c7260268" />
 
 
 ## Features
