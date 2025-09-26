@@ -1,26 +1,27 @@
 # backend.py
 import os
 import json
+import re
+from dotenv import load_dotenv
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-import streamlit as st
-from dotenv import load_dotenv
-
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.output_parsers import OutputFixingParser
-from langchain.agents import Tool
+from langchain.agents import create_tool_calling_agent, AgentExecutor, Tool
+import streamlit as st
 
 # ---------------------------
 # Load OpenAI API key
 # ---------------------------
 api_key = st.secrets["openai"]["api_key"]
-
-# Initialize LLM
 llm = ChatOpenAI(model='gpt-3.5-turbo', openai_api_key=api_key)
+
+load_dotenv()
+# api_key = os.environ.get("OPENAI_API_KEY")
 
 # ---------------------------
 # Load Walmart dataset
@@ -30,7 +31,7 @@ df['unit_price'] = df['unit_price'].str.replace('$', '').astype(float)
 df['Sales'] = df['unit_price'] * df['quantity']
 
 # ---------------------------
-# Tools
+# Tools for AI Agent
 # ---------------------------
 def summary_tool(query: str) -> str:
     numeric_cols = df.select_dtypes(include='number').columns
@@ -79,7 +80,7 @@ def query_tool(user_input: str) -> str:
 
 def general_question_tool(user_input: str) -> str:
     """
-    Generates Python + SQL + Explanation, then executes the Python code safely on df
+    Step 8: Execute AI-generated Python code and return actual output
     """
     columns = list(df.columns)
     llm_response = llm.invoke(f"""
@@ -92,6 +93,7 @@ def general_question_tool(user_input: str) -> str:
     2. SQL query (assume table name = walmart)
     3. Brief explanation in human language
 
+    ⚠️ Important: Assign the final result to a variable called `_result` in Python code.
     Return in clear sections:
     Python:
     <code>
@@ -101,32 +103,33 @@ def general_question_tool(user_input: str) -> str:
 
     Explanation:
     <text>
+
+    Answer:
+    <text>
     """)
 
     response_text = llm_response.content
 
-    # Try to extract and execute Python code
-    python_code = ""
-    if "Python:" in response_text:
+    # Extract Python code safely
+    match = re.search(r"```python(.*?)```", response_text, re.S)
+    if match:
+        python_code = match.group(1).strip()
+    else:
         try:
             python_code = response_text.split("Python:")[1].split("SQL:")[0].strip(" \n```")
         except:
             python_code = ""
 
-    exec_output = ""
-    if python_code:
-        try:
-            local_vars = {"df": df}
-            exec(python_code, {}, local_vars)
-            # If result stored in variable, try to capture last one
-            if "_result" in local_vars:
-                exec_output = str(local_vars["_result"])
-            else:
-                exec_output = str(local_vars)
-        except Exception as e:
-            exec_output = f"⚠️ Error executing code: {e}"
+    # Execute Python code safely
+    exec_globals = {'df': df.copy(), '_result': None, 'pd': pd}
+    try:
+        exec(python_code, exec_globals)
+        result = exec_globals.get('_result', None)
+        result_text = str(result)
+    except Exception as e:
+        result_text = f"⚠️ Error executing code: {e}"
 
-    return f"{response_text}\n\n---\nExecution Result:\n{exec_output}"
+    return f"Python:\n{python_code}\n\nSQL + Explanation:\n{response_text.split('SQL:')[1].strip() if 'SQL:' in response_text else ''}\n\nExecution Result:\n{result_text}"
 
 # ---------------------------
 # Convert to LangChain Tool objects
@@ -138,7 +141,7 @@ tools = [
     Tool(name="top_sales_tool", func=top_sales_tool, description="Shows the invoice with highest sales"),
     Tool(name="plots_tool", func=plots_tool, description="Generates plots in frontend"),
     Tool(name="query_tool", func=query_tool, description="Generates Python + SQL queries for user questions"),
-    Tool(name="general_question_tool", func=general_question_tool, description="Answer any general dataset question with Python + SQL + explanation + answer using actual data")
+    Tool(name="general_question_tool", func=general_question_tool, description="Answer any general dataset question with Python + SQL + explanation + answer")
 ]
 
 # ---------------------------
