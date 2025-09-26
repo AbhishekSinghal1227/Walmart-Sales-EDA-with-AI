@@ -98,7 +98,7 @@ def general_question_tool(user_input: str) -> str:
     1. Python (pandas) code to answer the question for df where df is Walmart.csv
     2. SQL query (assume table name = walmart)
     3. Brief explanation in human language
-    4. Provide output using the actual Walmart.csv dataset 
+    
 
     Return in clear sections:
     Python:
@@ -110,8 +110,7 @@ def general_question_tool(user_input: str) -> str:
     Explanation:
     <text>
 
-    Answer:
-    <text>
+
     """)
     return llm_response.content
 
@@ -139,7 +138,7 @@ fixed_questions = {
     "5": "Generate plots",
     "6": "Full analysis",
     "7": "Query Generator in Python & SQL",
-    "8": "General Questions with code, explanation and answer"
+    
 }
 
 # ---------------------------
@@ -157,7 +156,7 @@ def answer_query(choice, user_input=None):
                 "tools_used": ["summary_tool","missing_tool","correlation_tool","top_sales_tool","plots_tool"]
             })
         }
-    elif choice in ["7","8"]:
+    elif choice in ["7"]:
         if not user_input:
             return {"output": "No input provided"}
         func = query_tool if choice=="7" else general_question_tool
@@ -167,6 +166,7 @@ def answer_query(choice, user_input=None):
         func_name = tool_map[choice]
         func = next(t.func for t in tools if t.name==func_name)
         return {"output": func("")}
+
 
 
 
