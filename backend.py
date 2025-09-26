@@ -1,31 +1,26 @@
 # backend.py
 import os
 import json
-from dotenv import load_dotenv
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
+import streamlit as st
+from dotenv import load_dotenv
+
 from pydantic import BaseModel
 from langchain_openai import ChatOpenAI
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import PydanticOutputParser
 from langchain.output_parsers import OutputFixingParser
-from langchain.agents import create_tool_calling_agent, AgentExecutor, Tool
+from langchain.agents import Tool
 
 # ---------------------------
 # Load OpenAI API key
 # ---------------------------
-import streamlit as st
-
-# Get the key from Streamlit Secrets
 api_key = st.secrets["openai"]["api_key"]
 
-# Initialize the OpenAI LLM with the key
-from langchain_openai import ChatOpenAI
+# Initialize LLM
 llm = ChatOpenAI(model='gpt-3.5-turbo', openai_api_key=api_key)
-
-load_dotenv()
-#api_key = os.environ.get("OPENAI_API_KEY")
 
 # ---------------------------
 # Load Walmart dataset
@@ -35,12 +30,7 @@ df['unit_price'] = df['unit_price'].str.replace('$', '').astype(float)
 df['Sales'] = df['unit_price'] * df['quantity']
 
 # ---------------------------
-# LLM setup
-# ---------------------------
-#llm = ChatOpenAI(model='gpt-3.5-turbo', openai_api_key=api_key)
-
-# ---------------------------
-# Tools for AI Agent
+# Tools
 # ---------------------------
 def summary_tool(query: str) -> str:
     numeric_cols = df.select_dtypes(include='number').columns
@@ -88,6 +78,9 @@ def query_tool(user_input: str) -> str:
     return llm_response.content
 
 def general_question_tool(user_input: str) -> str:
+    """
+    Generates Python + SQL + Explanation, then executes the Python code safely on df
+    """
     columns = list(df.columns)
     llm_response = llm.invoke(f"""
     You are a data analyst for the Walmart dataset with columns: {columns}
@@ -98,7 +91,6 @@ def general_question_tool(user_input: str) -> str:
     1. Python (pandas) code to answer the question for df where df is Walmart.csv
     2. SQL query (assume table name = walmart)
     3. Brief explanation in human language
-    
 
     Return in clear sections:
     Python:
@@ -109,9 +101,32 @@ def general_question_tool(user_input: str) -> str:
 
     Explanation:
     <text>
-
     """)
-    return llm_response.content
+
+    response_text = llm_response.content
+
+    # Try to extract and execute Python code
+    python_code = ""
+    if "Python:" in response_text:
+        try:
+            python_code = response_text.split("Python:")[1].split("SQL:")[0].strip(" \n```")
+        except:
+            python_code = ""
+
+    exec_output = ""
+    if python_code:
+        try:
+            local_vars = {"df": df}
+            exec(python_code, {}, local_vars)
+            # If result stored in variable, try to capture last one
+            if "_result" in local_vars:
+                exec_output = str(local_vars["_result"])
+            else:
+                exec_output = str(local_vars)
+        except Exception as e:
+            exec_output = f"⚠️ Error executing code: {e}"
+
+    return f"{response_text}\n\n---\nExecution Result:\n{exec_output}"
 
 # ---------------------------
 # Convert to LangChain Tool objects
@@ -123,7 +138,7 @@ tools = [
     Tool(name="top_sales_tool", func=top_sales_tool, description="Shows the invoice with highest sales"),
     Tool(name="plots_tool", func=plots_tool, description="Generates plots in frontend"),
     Tool(name="query_tool", func=query_tool, description="Generates Python + SQL queries for user questions"),
-    Tool(name="general_question_tool", func=general_question_tool, description="Answer any general dataset question with Python + SQL + explanation + answer")
+    Tool(name="general_question_tool", func=general_question_tool, description="Answer any general dataset question with Python + SQL + explanation + answer using actual data")
 ]
 
 # ---------------------------
@@ -165,11 +180,3 @@ def answer_query(choice, user_input=None):
         func_name = tool_map[choice]
         func = next(t.func for t in tools if t.name==func_name)
         return {"output": func("")}
-
-
-
-
-
-
-
-
